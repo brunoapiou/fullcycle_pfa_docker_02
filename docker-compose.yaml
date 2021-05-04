@@ -1,0 +1,53 @@
+version: '3'
+
+services:
+
+    myapp:
+        build:
+            context: app
+        #image: brunoapiou/app_pfa
+        #container_name: myapp
+        entrypoint: dockerize -wait tcp://mysql:3306 -timeout 30s flask run
+        networks:
+            - backend
+            - frontend
+        restart: always
+        depends_on: 
+            - mysql
+
+    nginx:
+        build:
+            context: web
+        #image: brunoapiou/nginx_pfa
+        #container_name: mynginx        
+        entrypoint: dockerize -wait tcp://myapp:5000 -timeout 30s /docker-entrypoint.sh nginx -g "daemon off;"
+        networks: 
+            - frontend
+        ports: 
+            - "8000:8080"
+        restart: always
+        depends_on: 
+            - myapp        
+
+    mysql:
+        build:
+            context: db
+        #image: mysql:5.7        
+        #container_name: mysql
+        command: --innodb-use-native-aio=0
+        volumes:
+            - ./dbdata:/var/lib/mysql
+        #environment: 
+        #    - MYSQL_ROOT_PASSWORD=1234
+        #    - MYSQL_DATABASE=desafio
+        #    - LANG=C.UTF-8
+        networks: 
+            - backend
+        restart: always
+        tty: true
+
+networks:
+    frontend:        
+        driver: bridge
+    backend:    
+        driver: bridge    
